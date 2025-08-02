@@ -1,0 +1,120 @@
+Basic Project Roadmap for Auth, Web & Mobile, and Cloud Storage
+A streamlined, four-sprint plan to build a minimal viable project featuring user authentication, web and mobile clients, and cloud-based document storage.
+
+Phase 1: Setup & Design (Week 1)
+Define core features
+
+User sign-up / login
+
+Document upload, listing, download
+
+Web dashboard + mobile app
+
+Choose technology stack
+
+Initialize repositories & CI
+
+Set up GitHub repo with main/dev branches
+
+Configure basic CI (linting + tests)
+
+Phase 2: Authentication Service (Week 2)
+Design user model
+
+Fields: email, password hash, created_at, last_login
+
+Implement backend endpoints
+
+POST /signup → create user + hash password
+
+POST /login → verify credentials + issue JWT
+
+GET /profile → protected route to fetch user info
+
+Secure routes
+
+Middleware to verify JWT on upload/download APIs
+
+Integrate on clients
+
+Web: store JWT in HTTP-only cookie or localStorage
+
+Mobile: store in secure storage (Keychain / Keystore)
+
+Phase 3: Cloud Storage Integration (Week 3)
+Provision storage bucket
+
+Create AWS S3 or GCS bucket
+
+Configure permissions (bucket policy with restricted access)
+
+Backend file APIs
+
+GET /upload-url → generate pre-signed URL
+
+GET /download/:id → validate JWT + fetch from bucket
+
+DELETE /:id → remove from bucket & DB
+
+Metadata persistence
+
+Store file ID, original filename, URL, owner_id in database
+
+Phase 4: Web & Mobile Clients (Weeks 4–5)
+Web Dashboard
+Login & Signup pages
+
+File explorer view
+
+List uploaded files with thumbnails or icons
+
+Upload component
+
+Drag-and-drop + progress bar
+
+Download & Delete actions
+
+Mobile App
+Authentication screens (signup/login)
+
+File list view
+
+Upload via camera roll or document picker
+
+Download and open in native viewer
+
+Phase 5: Testing & Deployment (Week 6)
+Write tests
+
+Backend: unit tests for auth + storage APIs
+
+Frontend: smoke tests for key UI flows
+
+CI/CD pipeline
+
+Automate build → test → deploy to staging
+
+On merge to main, deploy to production environment
+
+Deploy infrastructure
+
+Use Terraform or CloudFormation for reproducible setup
+
+Enable basic monitoring (CloudWatch / Google Cloud Monitoring)
+
+Publish mobile app
+
+Android: internal testing track on Google Play
+
+iOS: TestFlight distribution
+
+Next Steps & Enhancements
+Add file sharing links with expiration
+
+Implement role-based access control (e.g., view-only vs. edit)
+
+Enable versioning and audit logs
+
+Expand tests (load/performance) and add end-to-end suites
+
+Explore CI integrations for automated mobile builds (Fastlane)
