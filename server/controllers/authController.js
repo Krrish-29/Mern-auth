@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import userModel from '../models/userModel.js';
 import transporter from '../config/nodemailer.js';
-
+import { EMAIL_VERIFY_TEMPLATE,PASSWORD_RESET_TEMPLATE } from '../config/emailTemp.js';
 export const register = async (req,res)=>{
     
     const {name,email,password}=req.body;
@@ -34,8 +34,11 @@ export const register = async (req,res)=>{
         const mailOptions={
             from:process.env.SENDER_EMAIL,
             to:email,
-            subject:'welcome',
-            text:`Welcome`
+            subject:'Welcome to AuthApp',
+            text:`Hello,
+            Welcome to AuthApp! We're excited to have you on board.
+            Your account has been successfully created with the email ID: ${email}
+            Best regards,`
         }
         await transporter.sendMail(mailOptions);
 
@@ -99,22 +102,23 @@ export const logout=async(req,res)=>{
 export const sendVerifyOtp = async(req,res)=>{
     try{
         
-        const {userId}=req.body;
+        const {id}=req.user;
         
-        const user=await userModel.findById(userId);
+        const user=await userModel.findById(id);
+        const email=user.email;
         if(user.isAccountVerified){
             return res.json({success:true,message:'Account already verified'});
         }
         const otp=String(Math.floor(100000+Math.random()*90000));
         user.verifyOtp=otp;
-        user.verfiyOtpExpireAt=Date.now()+24*60*60*1000;
+        user.verifyOtpExpireAt=Date.now()+24*60*60*1000;
         await user.save();
 
         const mailOptions={
             from:process.env.SENDER_EMAIL,
             to:user.email,
             subject:'Otp',
-            text:`Otp: ${otp}`
+            html:EMAIL_VERIFY_TEMPLATE.replace("{{otp}}",otp).replace("{{email}}",email)
         }
         await transporter.sendMail(mailOptions);
 
@@ -127,20 +131,21 @@ export const sendVerifyOtp = async(req,res)=>{
 }
 
 export const verifyEmail = async (req,res)=>{
-    const {userId,otp}=req.body;
+    const {id}=req.user;
+    const {otp}=req.body;
 
-    if(!userId||!otp){
+    if(!id||!otp){
         return res.json({success:false,message:'Invaild Details'});
     }
     try{
-        const user=await userModel.findById(userId);
+        const user=await userModel.findById(id);
         if(!user){
             return res.json({success:false,message:'Invalid Details'});
         }
         if(user.verifyOtp===''||user.verifyOtp!==otp){
             return res.json({success:false,message:'Invalid Otp'});
         }
-        if(user.verfiyOtpExpireAt<Date.now()){
+        if(user.verifyOtpExpireAt<Date.now()){
             return res.json({success:false,message:'Otp Expired'});
         }
         user.isAccountVerified=true;
@@ -157,7 +162,7 @@ export const verifyEmail = async (req,res)=>{
 
 export const isAuthenticated=async(req,res)=>{
     try{
-        return res.json({success:true});
+        return res.json({success:true, userId: req.user.id});
     }catch(error){
         res.json({success:false,message:error.message});
     }
@@ -183,7 +188,7 @@ export const sendResetOtp=async(req,res)=>{
             from:process.env.SENDER_EMAIL,
             to:user.email,
             subject:'Otp',
-            text:`Otp: ${otp}`
+            html:PASSWORD_RESET_TEMPLATE.replace("{{otp}}",otp).replace("{{email}}",email)
         }
         await transporter.sendMail(mailOptions);
 
@@ -194,8 +199,8 @@ export const sendResetOtp=async(req,res)=>{
 }
 
 export const resetPassword=async(req,res)=>{
-    const {email,otp,newpassword}=req.body;
-    if(!email||!otp||!newpassword){
+    const {email,otp,newPassword}=req.body;
+    if(!email||!otp||!newPassword){
         return res.json({success:false,message:'Invalid Details'})
     }
     try{
@@ -203,13 +208,13 @@ export const resetPassword=async(req,res)=>{
         if(!user){
             return res.json({success:false,message:'Invalid User'});
         }
-        if(!user.resetOtp===''||user.resetOtp!==otp){
+        if(user.resetOtp===''||user.resetOtp!==otp){
             return res.json({success:false,message:'Invalid Otp'});
         }
         if(user.resetOtpExpireAt<Date.now()){
             return res.json({success:false,message:'Otp Expired'});
         }
-        const hashedPassword=await bcrypt.hash(newpassword,10);
+        const hashedPassword=await bcrypt.hash(newPassword,10);
         user.password=hashedPassword;
         user.resetOtp='';
         user.resetOtpExpireAt=0;
